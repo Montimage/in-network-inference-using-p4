@@ -9,54 +9,67 @@
 #
 
 from scapy.all import *
-import argparse, csv
+import argparse, csv, os
 
-parser = argparse.ArgumentParser()
+def extract_features_from_pcap( inputfile, outputfile, classification ):
+    results = []
+    last_ts = 0
 
-# Add argument
-parser.add_argument('-i', required=True, help='path to pcap file')
-parser.add_argument('-o', required=True, help='path to .csv output file')
-parser.add_argument('-c', required=True, help='classification')
-args = parser.parse_args()
+    #read the pcap file and extract the features for each packet
+    all_packets = rdpcap(inputfile)
 
-# parameters
-inputfile      = args.i
-outputfile     = args.o
-classification = int(args.c)
+    # for each packet in the pcap file
+    for packet in all_packets:
+        try:
+            ts     = packet.time # e.g., 1712073023.619379
+            ip_len = packet.len  # e.g., 76
 
-results = []
-last_ts = 0
+            ts = int( ts * 1000000) # in microsecond
 
-#read the pcap file and extract the features for each packet
-all_packets = rdpcap(inputfile)
+            # for the first time
+            if last_ts == 0:
+                last_ts = ts
+                continue
 
-# for each packet in the pcap file
-for packet in all_packets:
-    try:
-        ts     = packet.time # e.g., 1712073023.619379
-        ip_len = packet.len  # e.g., 76
+            # get IAT - Inter Arrival Time
+            iat = ts - last_ts
+            if iat < 0:
+                print("Ignore unordered packet ", packet )
+                continue
 
-        ts = int( ts * 1000000) # in microsecond
-
-        # for the first time
-        if last_ts == 0:
             last_ts = ts
-            continue
 
-        # get IAT - Inter Arrival Time
-        iat = ts - last_ts
-        last_ts = ts
+            metric = {"iat" : iat, "len": ip_len, "class": classification}
+            results.append( metric )
+        except AttributeError:
+            print("Error while parsing packet", packet)
 
-        metric = [ iat, ip_len, classification ]
-        results.append( metric )
-    except AttributeError:
-        print("Error while parsing packet", packet)
+    if len(results) == 0:
+        return
 
-with open( outputfile, 'w', encoding='UTF8', newline='') as f:
-    writer = csv.writer(f)
+    # need to write CSV header only if the file is not existing
+    need_header = not os.path.exists( outputfile )
 
-    # write the header
-    writer.writerow(["iat", "len", "classification"])
+    # append to output file
+    with open( outputfile, 'a', encoding='UTF8', newline='') as f:
+        writer = csv.DictWriter(f, results[0].keys() )
 
-    # write multiple rows
-    writer.writerows( results )
+        # write the header
+        if need_header :
+            writer.writeheader()
+
+        # write multiple rows
+        writer.writerows( results )
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+
+    # Add argument
+    parser.add_argument('-i', required=True, help='path to pcap file')
+    parser.add_argument('-o', required=True, help='path to .csv output file')
+    parser.add_argument('-c', required=True, help='classification')
+    args = parser.parse_args()
+
+    extract_features_from_pcap( args.i,  args.o, int(args.c) )
+
