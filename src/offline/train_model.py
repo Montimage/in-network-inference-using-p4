@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+
+# Generate a decision tree from an input csv file which contains n features and its classification.
+# In the CSV file,
+# - the first n columns contain features (X)
+# - the last column contain classification (Y)
 
 import numpy as np
 import pandas as pd
@@ -5,6 +11,7 @@ import argparse
 from sklearn.metrics import accuracy_score
 from sklearn import tree
 import pickle
+import matplotlib.pyplot as plt
 
 
 parser = argparse.ArgumentParser()
@@ -38,7 +45,10 @@ dt = tree.DecisionTreeClassifier()
 dt.fit(X, Y)
 
 # visualize the tree
-#tree.plot_tree( dt )
+plt.figure( dpi=100 )
+tree.plot_tree( dt, filled=True, feature_names=["iat", "len"])
+plt.savefig("./pcaps/dt.pdf", format='pdf', bbox_inches='tight')
+
 #Predict_Y = dt.predict(X)
 #print(accuracy_score(Y, Predict_Y))
 

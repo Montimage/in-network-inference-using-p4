@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Extract features from a pcap file, then write its values to a csv file.
 # The pcap file contains packets of a single flow which is sent through switch.

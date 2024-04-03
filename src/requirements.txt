@@ -2,3 +2,5 @@ numpy
 pandas
 scapy
 mininet
+glob
+scikit-learn
