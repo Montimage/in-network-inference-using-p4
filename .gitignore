@@ -161,3 +161,8 @@ cython_debug/
 /.externalToolBuilders/
 /.project
 .DS_Store
+/rsync.sh
+*.p4info
+*.log
+src/bmv2/logs
+src/bmv2/pcaps

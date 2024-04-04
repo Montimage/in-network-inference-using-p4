@@ -70,6 +70,14 @@ struct headers {
     udp_t        udp;
 }
 
+struct digest_t {
+    ip4Addr_t srcAddr;
+    ip4Addr_t dstAddr;
+    bit<16> srcPort;
+    bit<16> destPort;
+    bit<8> protocol;
+}
+
 /*************************************************************************
 *********************** P A R S E R  ***********************************
 *************************************************************************/
@@ -159,6 +167,9 @@ control MyIngress(inout headers hdr,
     apply {
         if (hdr.ipv4.isValid() ) {
             ipv4_lpm.apply();
+            // send a digest to controller
+            digest<digest_t>(1, {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, 
+                                 meta.srcPort, meta.dstPort, hdr.ipv4.protocol});
         }
     }
 }
