@@ -29,6 +29,29 @@ import p4runtime_lib.bmv2
 from p4runtime_lib.switch import ShutdownAllSwitchConnections
 import p4runtime_lib.helper
 from p4.v1 import p4runtime_pb2, p4runtime_pb2_grpc
+import subprocess
+
+CLASS_LABLES = {
+   0: "unknown",
+   1: "skype",
+   2: "whasapp",
+   3: "webex"
+}
+
+def load_switch_cli(sw, runtime_cli):
+    """ This method will start up the CLI and use the contents of the
+        command files as input.
+    """
+    cli = 'simple_switch_CLI'
+    # get the port for this particular switch's thrift server
+    thrift_port = 9090 # TODO: 
+
+    print('Configuring switch with file %s' % (runtime_cli))
+    with open(runtime_cli, 'r') as fin:
+        cli_outfile = 'logs/cli_output.log'
+        with open(cli_outfile, 'w') as fout:
+            subprocess.Popen([cli, '--thrift-port', str(thrift_port)],
+                             stdin=fin, stdout=fout)
 
 def buildDigestEntry(p4info_helper, digest_name=None):
     digest_entry = p4runtime_pb2.DigestEntry()
@@ -90,12 +113,15 @@ def readDigests(p4info_helper, sw, digest_name):
                 srcPort = bytes_to_int( st[2].bitstring )
                 dstPort = bytes_to_int( st[3].bitstring )
                 proto   = bytes_to_int( st[4].bitstring )
-                result  = bytes_to_int( st[5].bitstring )
+                # feature values
+                iat     = bytes_to_int( st[5].bitstring )
+                ipLen   = bytes_to_int( st[6].bitstring )
+                result  = bytes_to_int( st[7].bitstring )
                 # expose the result
-                yield( srcIP, dstIP, srcPort, dstPort, proto, result )
+                yield( srcIP, dstIP, srcPort, dstPort, proto, iat, ipLen, result )
 
 
-def main(p4info_file_path, bmv2_file_path):
+def main(p4info_file_path, bmv2_file_path, runtime_cli_path):
     # Instantiate a P4Runtime helper from the p4info file
     p4info_helper = p4runtime_lib.helper.P4InfoHelper(p4info_file_path)
     
@@ -109,22 +135,22 @@ def main(p4info_file_path, bmv2_file_path):
             name='s1',
             address='127.0.0.1:50051',
             device_id=0,
-            proto_dump_file='s1-p4runtime-requests.log')
+            proto_dump_file='logs/s1-p4runtime-requests.log')
 
         # Send master arbitration update message to establish this controller as
         # master (required by P4Runtime before performing any other write operation)
         s1.MasterArbitrationUpdate()
 
         # Write the rules that performs inference
-        #writeTunnelRules(p4info_helper, s1)
-        
+        load_switch_cli( s1, runtime_cli_path )
+
         # send a digest request
         sendDigestEntry(p4info_helper, s1, DIGEST_NAME)
         
         # read classification results from the switch
         while True:
-            for (srcIP, dstIP, srcPort, dstPort, proto, result) in readDigests(p4info_helper, s1, DIGEST_NAME):
-                print(srcIP, dstIP, srcPort, dstPort, proto, result)
+            for (srcIP, dstIP, srcPort, dstPort, proto, iat, ipLen, result) in readDigests(p4info_helper, s1, DIGEST_NAME):
+                print(srcIP, dstIP, srcPort, dstPort, proto, "=>" , iat, ipLen, "=>", CLASS_LABLES[result])
             #sleep(0.01)
 
     except KeyboardInterrupt:
@@ -145,6 +171,10 @@ if __name__ == '__main__':
                         type=str, action="store", required=False,
                         default='./build/basic.json')
 
+    parser.add_argument('--runtime-cli', help='The ML control plane file',
+                        type=str, action="store", required=False,
+                        default='../offline/pcaps/s1-commands.txt')
+
     args = parser.parse_args()
 
     if not os.path.exists(args.p4info):
@@ -157,4 +187,4 @@ if __name__ == '__main__':
         print("\nBMv2 JSON file not found: %s\nHave you run 'make'?" % args.bmv2_json)
         parser.exit(1)
    
-    main(args.p4info, args.bmv2_json)
+    main(args.p4info, args.bmv2_json, args.runtime_cli)

@@ -10,8 +10,9 @@ const bit<8>  TYPE_UDP  = 17;
 const bit<32> NB_ENTRIES = 2048;
 
 //write and read the first element of a register (which contains an array of elements)
-#define WRITE_REG(r, v) r.write((bit<32>)0, v)
-#define READ_REG(r,  v) r.read(v, (bit<32>)0)
+#define FIST_INDEX ((bit<32>)0)
+#define WRITE_REG(r, v) r.write(FIST_INDEX, v)
+#define READ_REG(r,  v) r.read(v, FIST_INDEX)
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
@@ -20,7 +21,7 @@ const bit<32> NB_ENTRIES = 2048;
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
-typedef bit<48> timestamp_t; //bmv2 uses 48 bit to store ingress_global_timestamp
+typedef bit<64> timestamp_t;
 typedef bit<8>  inference_result_t; //final classification
 
 header ethernet_t {
@@ -72,7 +73,7 @@ struct metadata {
     bit<16> srcPort;
     bit<16> dstPort;
     //ml features
-    bit<32> iat;
+    timestamp_t iat;
 
     bit<32> ml_code_iat; //code value of the first feature
     bit<32> ml_code_len; //code value of the second feature
@@ -93,6 +94,8 @@ struct digest_t {
     bit<16> srcPort;
     bit<16> destPort;
     bit<8> protocol;
+    timestamp_t iat;
+    bit<16> len;
     inference_result_t class_value; //class of traffic in this flow
 }
 
@@ -236,16 +239,16 @@ control MyIngress(inout headers hdr,
         timestamp_t last;
         timestamp_t now;
         READ_REG( last_ts_reg, last );
-        now = standard_metadata.ingress_global_timestamp; //moment the packet arrived at the ingress port
-        meta.iat = (bit<32>)( now - last );
+        //moment the packet arrived at the ingress port
+        // bmv2 uses 48 bit to store ingress_global_timestamp
+        now = (timestamp_t) standard_metadata.ingress_global_timestamp * 1000; 
+        meta.iat = ( now - last );
         WRITE_REG( last_ts_reg, now );
     }
     timestamp_t last_ts;
 
     apply {
         if (hdr.ipv4.isValid() ) {
-            ipv4_lpm.apply();
-            
             //3 steps of inference:
             //  0. extract feature values
             get_iat();
@@ -257,12 +260,22 @@ control MyIngress(inout headers hdr,
             //2. calculate the final result
             ml_code.apply();
             
+            //log_msg( "iat: {}, len: {} => ({}, {}) => {}", {
+            //    meta.iat, hdr.ipv4.totalLen,
+            //    meta.ml_code_iat, meta.ml_code_len,
+            //    meta.ml_result
+            //});
+            
             //if( meta.ml_result != 0 )
             {
                 // send a digest to controller
                 digest<digest_t>(1, {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, 
-                                 meta.srcPort, meta.dstPort, hdr.ipv4.protocol, meta.ml_result});
-             }
+                                 meta.srcPort, meta.dstPort,
+                                 hdr.ipv4.protocol, 
+                                 (bit<64>)meta.iat, hdr.ipv4.totalLen, 
+                                 meta.ml_result});
+            }
+            ipv4_lpm.apply();
         }
     }
 }
