@@ -24,7 +24,7 @@ def extract_features_from_pcap( inputfile, outputfile, classification ):
             ts     = packet.time # e.g., 1712073023.619379
             ip_len = packet.len  # e.g., 76
 
-            ts = int( ts * 1000000) # in microsecond
+            ts = int( ts * 1000000 * 1000) # in nanosecond
 
             # for the first time
             if last_ts == 0:

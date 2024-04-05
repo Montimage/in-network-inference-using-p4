@@ -19,6 +19,10 @@ DIR     = os.path.join(__DIR__, "pcaps")
 
 OUTPUT_FILE = os.path.join(DIR, "features.csv")
 
+# clean the output file if it is existing
+if os.path.exists( OUTPUT_FILE ):
+    os.remove( OUTPUT_FILE )
+
 class_index = 0
 file_names = {}
 

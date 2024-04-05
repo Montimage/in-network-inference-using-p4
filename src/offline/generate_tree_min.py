@@ -36,7 +36,7 @@ def minimize( path ):
     DOMAIN = {
         "iat" : {
             "min": 0, 
-            "max": 100*1000000 #100 seconds should be enough
+            "max": 100*1000*1000000 #100 seconds should be enough
         },
         "len" : {
             "min": 0, 
