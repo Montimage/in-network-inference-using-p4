@@ -6,6 +6,13 @@
 const bit<16> TYPE_IPV4 = 0x800;
 const bit<8>  TYPE_TCP  = 6;
 const bit<8>  TYPE_UDP  = 17;
+
+const bit<32> NB_ENTRIES = 2048;
+
+//write and read the first element of a register (which contains an array of elements)
+#define WRITE_REG(r, v) r.write((bit<32>)0, v)
+#define READ_REG(r,  v) r.read(v, (bit<32>)0)
+
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
 *************************************************************************/
@@ -13,6 +20,8 @@ const bit<8>  TYPE_UDP  = 17;
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
+typedef bit<48> timestamp_t; //bmv2 uses 48 bit to store ingress_global_timestamp
+typedef bit<8>  inference_result_t; //final classification
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -59,8 +68,15 @@ header udp_t {
 }
 
 struct metadata {
+    //remember this info to avoid accessing from udp or tcp
     bit<16> srcPort;
     bit<16> dstPort;
+    //ml features
+    bit<32> iat;
+
+    bit<32> ml_code_iat; //code value of the first feature
+    bit<32> ml_code_len; //code value of the second feature
+    inference_result_t ml_result;    //final classification result
 }
 
 struct headers {
@@ -71,11 +87,13 @@ struct headers {
 }
 
 struct digest_t {
-    ip4Addr_t srcAddr;
+    //flow ID is a 5-tuples
+    ip4Addr_t srcAddr;  //32 bits
     ip4Addr_t dstAddr;
     bit<16> srcPort;
     bit<16> destPort;
     bit<8> protocol;
+    inference_result_t class_value; //class of traffic in this flow
 }
 
 /*************************************************************************
@@ -164,12 +182,87 @@ control MyIngress(inout headers hdr,
         default_action = drop();
     }
 
+
+    /* 1.1 table and its actions for the first feature: IAT */
+    action set_code_iat(bit<32> val){
+        meta.ml_code_iat = val;
+    }
+    table ml_feature_iat{
+        key = {
+            meta.iat : range ;
+        }
+        actions = {
+            NoAction;
+            set_code_iat;
+        }
+        size = 1024;
+    } 
+
+    /* 1.2. table and its actions for the second feature: ip.len */
+    action set_code_len(bit<32> val){
+        meta.ml_code_len = val;
+    }
+    table ml_feature_len{
+        key = {
+            hdr.ipv4.totalLen : range ;
+        }
+        actions = {
+            NoAction;
+            set_code_len;
+        }
+       size = 1024;
+    }
+
+    /* 2. table and its actions for the final codes */
+    action set_result(inference_result_t val){
+        meta.ml_result = val;
+    }
+    table ml_code{
+        key = {
+            meta.ml_code_iat : exact ;
+            meta.ml_code_len : exact ;
+        }
+        actions = {
+            NoAction;
+            set_result;
+        }
+       size = 1024;
+    }
+
+    //timestamp of the previous packet
+    // we need only 1 element for now (without considering IAT of packets belong to a flow)
+    register<timestamp_t>(1) last_ts_reg;
+    action get_iat(){
+        timestamp_t last;
+        timestamp_t now;
+        READ_REG( last_ts_reg, last );
+        now = standard_metadata.ingress_global_timestamp; //moment the packet arrived at the ingress port
+        meta.iat = (bit<32>)( now - last );
+        WRITE_REG( last_ts_reg, now );
+    }
+    timestamp_t last_ts;
+
     apply {
         if (hdr.ipv4.isValid() ) {
             ipv4_lpm.apply();
-            // send a digest to controller
-            digest<digest_t>(1, {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, 
-                                 meta.srcPort, meta.dstPort, hdr.ipv4.protocol});
+            
+            //3 steps of inference:
+            //  0. extract feature values
+            get_iat();
+            
+            //1. calculate feature codes
+            ml_feature_iat.apply();
+            ml_feature_len.apply();
+            
+            //2. calculate the final result
+            ml_code.apply();
+            
+            //if( meta.ml_result != 0 )
+            {
+                // send a digest to controller
+                digest<digest_t>(1, {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, 
+                                 meta.srcPort, meta.dstPort, hdr.ipv4.protocol, meta.ml_result});
+             }
         }
     }
 }

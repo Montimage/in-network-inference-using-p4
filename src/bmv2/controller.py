@@ -90,8 +90,9 @@ def readDigests(p4info_helper, sw, digest_name):
                 srcPort = bytes_to_int( st[2].bitstring )
                 dstPort = bytes_to_int( st[3].bitstring )
                 proto   = bytes_to_int( st[4].bitstring )
+                result  = bytes_to_int( st[5].bitstring )
                 # expose the result
-                yield( srcIP, dstIP, srcPort, dstPort, proto )
+                yield( srcIP, dstIP, srcPort, dstPort, proto, result )
 
 
 def main(p4info_file_path, bmv2_file_path):
@@ -122,8 +123,8 @@ def main(p4info_file_path, bmv2_file_path):
         
         # read classification results from the switch
         while True:
-            for (srcIP, dstIP, srcPort, dstPort, proto) in readDigests(p4info_helper, s1, DIGEST_NAME):
-                print(srcIP, dstIP, srcPort, dstPort, proto)
+            for (srcIP, dstIP, srcPort, dstPort, proto, result) in readDigests(p4info_helper, s1, DIGEST_NAME):
+                print(srcIP, dstIP, srcPort, dstPort, proto, result)
             #sleep(0.01)
 
     except KeyboardInterrupt:
