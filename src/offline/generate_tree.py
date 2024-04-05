@@ -30,13 +30,11 @@ args = parser.parse_args()
 inputfile  = args.i
 outputfile = args.o
 
-# structure of model: DecisionTreeClassifier
-# https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html#sphx-glr-auto-examples-tree-plot-unveil-tree-structure-py
-dt = pd.read_pickle( inputfile )
-
 
 # Visite the tree using Depth-first search
-def visite(tree, node_id, features, file, path = [] ):
+def visite(dt, node_id, features, file, path = [] ):
+    classes = dt.classes_
+    tree  = dt.tree_
     left  = tree.children_left
     right = tree.children_right
 
@@ -53,7 +51,8 @@ def visite(tree, node_id, features, file, path = [] ):
 
         # see https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html#what-is-the-values-array-used-here
         a = list(tree.value[node_id][0])
-        classification = a.index(max(a))
+        class_index = a.index(max(a))
+        classification = classes[ class_index ]
 
         # wirte the node information into text file
         file.write("\t IF {0} THEN {1};\n".format( " and ".join(clause), str(classification) ))
@@ -63,15 +62,20 @@ def visite(tree, node_id, features, file, path = [] ):
         org_path = path.copy()
         # visit the left branch first
         path.append( (node_id, "<=") )
-        visite( tree, left[ node_id ], features, file, path )
+        visite( dt, left[ node_id ], features, file, path )
 
         # visite the right branch
         org_path.append( (node_id, ">") )
-        visite( tree, right[ node_id ], features, file, org_path )
+        visite( dt, right[ node_id ], features, file, org_path )
 
 
 
 FEATURE_NAMES = ["iat", "len"]
+
+
+# structure of model: DecisionTreeClassifier
+# https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html#sphx-glr-auto-examples-tree-plot-unveil-tree-structure-py
+dt = pd.read_pickle( inputfile )
 
 # output the tree in a text file, write it
 threshold = dt.tree_.threshold
@@ -94,4 +98,4 @@ with open(outputfile,"w") as f:
         f.write("{0} = {1};\n".format( fe, str(val) ))
     
     # visite the tree from the root which has index = 0
-    visite(dt.tree_, 0, features, f)
+    visite(dt, 0, features, f)
