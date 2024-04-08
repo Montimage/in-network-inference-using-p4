@@ -37,6 +37,10 @@ Y = [i[-1]   for i in data] #last column is "classification"
 X = np.array(X)
 Y = np.array(Y)
 
+# ignore the first line as it is unknown since no IAT
+if Y[0] == 0:
+    X = X[1:]
+    Y = Y[1:]
 # see https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier.score
 # print the mean accuracy on the given test data (X) and labels (Y).
 print("Score", dt.score(X,Y))
