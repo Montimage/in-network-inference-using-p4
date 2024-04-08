@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
 
-# Expand a DecisionTreeClassifier to a text file which is structured as following:
-# - for each feature:
-#    + feature-i: list of thresholds 
-#    + ...
-# - for each path from root to leaf:
-#    + IF condition-1 and condition-2 and ... THEN classification-1
-#
-#
-# See an example in pcaps/tree.txt
+# Valid X again a DecisionTreeClassifier.
+# and explain its decision paths
 
 import pandas as pd
 import argparse
@@ -19,7 +12,7 @@ parser = argparse.ArgumentParser()
 
 # Add argument
 parser.add_argument('-i', default="./pcaps/dt.model", help='path to the input model')
-parser.add_argument('-v', default="[[91000,40]]",     help='X to predict')
+parser.add_argument('-v', default="[[93500,46],[93501,64]]", help='X to predict')
 
 args = parser.parse_args()
 inputfile  = args.i
@@ -35,5 +28,44 @@ CLASS_LABLES = {
 # structure of model: DecisionTreeClassifier
 # https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html#sphx-glr-auto-examples-tree-plot-unveil-tree-structure-py
 dt = pd.read_pickle( inputfile )
-val = dt.predict( X )[0]
-print(CLASS_LABLES[val])
+feature = dt.tree_.feature
+threshold = dt.tree_.threshold
+
+val = dt.predict( X )
+print("Prediction:", [CLASS_LABLES[i] for i in val])
+
+# https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html#decision-path
+
+#print(dt.decision_path(X))
+node_indicator = dt.decision_path(X)
+leaf_id = dt.apply(X)
+
+for sample_id in range(0, len(X)):
+    # obtain ids of the nodes `sample_id` goes through, i.e., row `sample_id`
+    node_index = node_indicator.indices[
+        node_indicator.indptr[sample_id] : node_indicator.indptr[sample_id + 1]
+    ]
+    
+    print("Rules used to predict sample {id}: {pred}".format(id=sample_id, pred=CLASS_LABLES[val[sample_id]]))
+    for node_id in node_index:
+        # continue to the next node if it is a leaf node
+        if leaf_id[sample_id] == node_id:
+            continue
+    
+        # check if value of the split feature for sample 0 is below threshold
+        if X[sample_id][feature[node_id]] <= threshold[node_id]:
+            threshold_sign = "<="
+        else:
+            threshold_sign = ">"
+    
+        print(
+            " - decision node {node} : (X[{sample}, {feature}] = {value}) "
+            "{inequality} {threshold})".format(
+                node=node_id,
+                sample=sample_id,
+                feature=feature[node_id],
+                value=X[sample_id][feature[node_id]],
+                inequality=threshold_sign,
+                threshold=threshold[node_id],
+            )
+    )
