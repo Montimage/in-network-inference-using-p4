@@ -84,4 +84,4 @@ When comparing this output with the [extracted features](./src/offline/pcaps/sky
 
 
 
-When replacing `iat` by `diffLen` feature (that represent the difference of lengths of 2 consecutive IP packets), then the BMv2 switch can infer correctly when replaying `skype.v2.pcap`. See result [here](https://github.com/Montimage/inline-traffic-classification-using-p4/tree/replace-iat-by-diffLen?tab=readme-ov-file#inference)
+When replacing `iat` by `diffLen` feature (that represents the difference of lengths of 2 consecutive IP packets), then the BMv2 switch can infer *correctly* when replaying `skype.v2.pcap`. See result [here](https://github.com/Montimage/inline-traffic-classification-using-p4/tree/replace-iat-by-diffLen?tab=readme-ov-file#inference).
