@@ -78,8 +78,10 @@ src/offline$ ./predict_file.py
 Score 1.0
 ```
 
-When replacing `iat` by `diffLen` feature (that represent the difference of lengths of 2 consecutive IP packets), then the BMv2 switch can infer correctly when replaying `skype.v2.pcap`. See result [here](https://github.com/Montimage/inline-traffic-classification-using-p4/tree/replace-iat-by-diffLen?tab=readme-ov-file#inference)
 When comparing this output with the [extracted features](./src/offline/pcaps/skype.v2.csv), we see that the IAT values have been changed. This difference is caused by:
 - tcpreplay cannot replay exactly packets in the time
 - and the software switch of P4 [does not capture precisely](https://github.com/p4lang/behavioral-model/blob/main/docs/simple_switch.md#bmv2-timestamp-implementation-notes) arrival timestamp of packets
 
+
+
+When replacing `iat` by `diffLen` feature (that represent the difference of lengths of 2 consecutive IP packets), then the BMv2 switch can infer correctly when replaying `skype.v2.pcap`. See result [here](https://github.com/Montimage/inline-traffic-classification-using-p4/tree/replace-iat-by-diffLen?tab=readme-ov-file#inference)
