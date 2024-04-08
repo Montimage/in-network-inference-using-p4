@@ -37,7 +37,7 @@ Y = [i[-1]   for i in data] #last column is "classification"
 X = np.array(X)
 Y = np.array(Y)
 
-# ignore the first line as it is unknown since no IAT
+# ignore the first line as it is unknown since no diffLen
 if Y[0] == 0:
     X = X[1:]
     Y = Y[1:]

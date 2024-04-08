@@ -49,35 +49,26 @@ make run
 mininet> sh tcpreplay -i s1-eth1  --preload-pcap --timer=gtod ../offline/pcaps/skype.v2.pcap
 ```
 
-### Note: Inaccuracy classification
-You might notice that the inference output is inaccuracy wrt the replaying pcap file, e.g., the output of the controller is as the following when replaying `skype.v2.pcap` file:
+An output of the `controller.py` is as the following:
 
 ```bash
-[Mon Apr 08 14:28:09] mmt@mmt:bmv2$ ./controller.py 
+src/bmv2$ ./controller.py 
+Configuring switch with file ../offline/pcaps/s1-commands.txt
+E0408 17:48:33.927385753   58549 fork_posix.cc:63]           Fork support is only compatible with the epoll1 and poll polling strategies
 192.168.1.34 157.55.130.153 50057 443 6 => 0 64 => unknown
-157.55.130.153 192.168.1.34 443 50057 6 => 130308000 60 => skype
-192.168.1.34 157.55.130.153 50057 443 6 => 452000 52 => webex
-192.168.1.34 157.55.130.153 50057 443 6 => 403000 124 => webex
-157.55.130.153 192.168.1.34 443 50057 6 => 132979000 52 => skype
-192.168.1.34 157.55.130.153 50057 443 6 => 516000 86 => webex
-192.168.1.34 157.55.130.153 50057 443 6 => 532443000 86 => skype
-192.168.1.34 157.55.130.153 50057 443 6 => 857509000 86 => skype
-192.168.1.34 157.55.130.153 50057 443 6 => 1512056000 86 => skype
-192.168.1.34 157.55.130.153 50057 443 6 => 2820065000 86 => skype
-192.168.1.34 157.55.130.153 50057 443 6 => 5447276000 86 => skype
-192.168.1.34 157.55.130.153 50057 443 6 => 2026054000 52 => skype
-192.168.1.34 157.55.130.153 50057 443 6 => 5509776000 86 => skype
-157.55.130.153 192.168.1.34 443 50057 6 => 128934000 93 => skype
-192.168.1.34 157.55.130.153 50057 443 6 => 3883000 40 => webex
+157.55.130.153 192.168.1.34 443 50057 6 => 65531 60 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65527 52 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65607 124 => skype
+157.55.130.153 192.168.1.34 443 50057 6 => 65463 52 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65569 86 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65535 86 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65535 86 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65535 86 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65535 86 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65535 86 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65501 52 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65569 86 => skype
+157.55.130.153 192.168.1.34 443 50057 6 => 65542 93 => skype
+192.168.1.34 157.55.130.153 50057 443 6 => 65482 40 => skype
+^CBye.
 ```
-
-There are few packets which are classified as `webex` (unless the first packet is unknown as it has no IAT).
-However this inference in the P4 switch is performed correctly as its [score](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier.score) is 100%, e.g.,
-```bash
-src/offline$ ./predict_file.py 
-Score 1.0
-```
-When comparing this output with the [extracted features](./src/offline/pcaps/skype.v2.csv), we see that the IAT values have been changed. This difference is caused by:
-- tcpreplay cannot replay exactly packets in the time
-- and the software switch of P4 [does not capture precisely](https://github.com/p4lang/behavioral-model/blob/main/docs/simple_switch.md#bmv2-timestamp-implementation-notes) arrival timestamp of packets
-

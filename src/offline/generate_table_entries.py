@@ -31,7 +31,7 @@ inputfile  = args.i
 outputfile = args.o
 
 
-FEATURE_NAMES = ["iat", "len"]
+FEATURE_NAMES = ["diffLen", "len"]
 
 
 priority=0
@@ -67,9 +67,9 @@ def write_entry(f, domain, classification):
 def minimize( path ):
     # range of possible values of each feature 
     DOMAIN = {
-        "iat" : {
+        "diffLen" : {
             "min": 0, 
-            "max": 100*1000*1000000 #100 seconds should be enough
+            "max": 2*0xFFFF #2 times of packet size
         },
         "len" : {
             "min": 0, 

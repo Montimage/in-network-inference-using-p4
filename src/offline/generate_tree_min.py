@@ -34,9 +34,9 @@ outputfile = args.o
 def minimize( path ):
     # range of possible values of each feature 
     DOMAIN = {
-        "iat" : {
+        "diffLen" : {
             "min": 0, 
-            "max": 100*1000*1000000 #100 seconds should be enough
+            "max": 2*0xFFFF #2 times of packet size
         },
         "len" : {
             "min": 0, 
@@ -125,7 +125,7 @@ def visite(dt, node_id, features, file, path = [] ):
 
 
 
-FEATURE_NAMES = ["iat", "len"]
+FEATURE_NAMES = ["diffLen", "len"]
 
 # structure of model: DecisionTreeClassifier
 # https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html#sphx-glr-auto-examples-tree-plot-unveil-tree-structure-py
