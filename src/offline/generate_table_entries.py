@@ -34,24 +34,11 @@ outputfile = args.o
 FEATURE_NAMES = ["iat", "len"]
 
 
-UNIQUE_CODE = {}
-def get_unique_code( fe, lo, hi ):
-    key = ",".join([fe, str(lo), str(hi)])
-    # whether this tuple is processed
-    exist = True
-    if key not in UNIQUE_CODE:
-        exist = False
-        UNIQUE_CODE[key] = (len(UNIQUE_CODE) + 1)
-    return (exist, UNIQUE_CODE[key])
-
-
-# https://github.com/p4lang/behavioral-model?tab=readme-ov-file#using-the-cli-to-populate-tables
-#syntax: table_add <table name> <action name> <match fields> => <action parameters> [priority]
-def write_entry(f, table_name, action_name, match_fields, action_param):
-    f.write("table_add MyIngress.{} {} {} => {}\n".format( table_name, action_name, match_fields, action_param ))
-
-def write_entries(f, domain, classification):
-    codes = []
+priority=0
+def write_entrie(f, domain, classification):
+    global priority
+    priority += 1
+    clause = []
     # for each feature in order
     for i in range(0, len(FEATURE_NAMES)):
         fe = FEATURE_NAMES[i]
@@ -66,22 +53,15 @@ def write_entries(f, domain, classification):
         #  need to translate to [lo, hi]
         lo = int(lo) + 1
         hi = int(hi) # convert to integer
-            
-        exist, code = get_unique_code( fe, lo, hi )
-        codes.append( str(code) )
-        # already exists ==> no need to add a duplicated entry
-        if exist:
-            continue
-        # we are using range table: https://github.com/p4lang/behavioral-model/blob/main/docs/simple_switch.md#range-tables
-        #   to match a feature value in a rang of [min, max]
-        write_entry(f, "ml_feature_{}".format(fe), "set_code_{}".format(fe),
-                     # https://github.com/p4lang/behavioral-model/blob/c74c53661778cc564b7f8e1c1197241319516809/tools/runtime_CLI.py#L638
-                     "{}->{}".format(lo, hi), # runtime_CLI separate lo, hi by "->"
-                     "{val} {priority}".format( val=code, priority=code) #we use code also as priority
-                     )
+       
+        # https://github.com/p4lang/behavioral-model/blob/c74c53661778cc564b7f8e1c1197241319516809/tools/runtime_CLI.py#L638
+        # runtime_CLI separate lo, hi by "->"     
+        clause.append("{}->{}".format(lo, hi))
 
-    # code table
-    write_entry(f, "ml_code", "set_result", " ".join(codes), classification)
+    # add this entry table (which represents a path from the root to a leaf of the DecisionTree
+    # https://github.com/p4lang/behavioral-model?tab=readme-ov-file#using-the-cli-to-populate-tables
+    #syntax: table_add <table name> <action name> <match fields> => <action parameters> [priority]
+    f.write("table_add MyIngress.ml_code set_result {} => {} {}\n".format( " ".join(clause), classification, priority ))
 
 # minimize the boolean expression which is collected along a path
 def minimize( path ):
@@ -89,7 +69,7 @@ def minimize( path ):
     DOMAIN = {
         "iat" : {
             "min": 0, 
-            "max": 100*1000000 #100 seconds should be enough
+            "max": 100*1000*1000000 #100 seconds should be enough
         },
         "len" : {
             "min": 0, 

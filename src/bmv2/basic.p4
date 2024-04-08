@@ -75,8 +75,6 @@ struct metadata {
     //ml features
     timestamp_t iat;
 
-    bit<32> ml_code_iat; //code value of the first feature
-    bit<32> ml_code_len; //code value of the second feature
     inference_result_t ml_result;    //final classification result
 }
 
@@ -185,45 +183,14 @@ control MyIngress(inout headers hdr,
         default_action = drop();
     }
 
-
-    /* 1.1 table and its actions for the first feature: IAT */
-    action set_code_iat(bit<32> val){
-        meta.ml_code_iat = val;
-    }
-    table ml_feature_iat{
-        key = {
-            meta.iat : range ;
-        }
-        actions = {
-            NoAction;
-            set_code_iat;
-        }
-        size = 1024;
-    } 
-
-    /* 1.2. table and its actions for the second feature: ip.len */
-    action set_code_len(bit<32> val){
-        meta.ml_code_len = val;
-    }
-    table ml_feature_len{
-        key = {
-            hdr.ipv4.totalLen : range ;
-        }
-        actions = {
-            NoAction;
-            set_code_len;
-        }
-       size = 1024;
-    }
-
-    /* 2. table and its actions for the final codes */
+    /* ml table and its actions for the final result */
     action set_result(inference_result_t val){
         meta.ml_result = val;
     }
     table ml_code{
         key = {
-            meta.ml_code_iat : exact ;
-            meta.ml_code_len : exact ;
+            meta.iat          : range ;
+            hdr.ipv4.totalLen : range ;
         }
         actions = {
             NoAction;
@@ -243,21 +210,18 @@ control MyIngress(inout headers hdr,
         // bmv2 uses 48 bit to store ingress_global_timestamp
         now = (timestamp_t) standard_metadata.ingress_global_timestamp * 1000; 
         meta.iat = ( now - last );
+        //meta.iat = 93500;
         WRITE_REG( last_ts_reg, now );
     }
     timestamp_t last_ts;
 
     apply {
         if (hdr.ipv4.isValid() ) {
-            //3 steps of inference:
+            //2 steps of inference:
             //  0. extract feature values
             get_iat();
             
-            //1. calculate feature codes
-            ml_feature_iat.apply();
-            ml_feature_len.apply();
-            
-            //2. calculate the final result
+            //  1. match the final result
             ml_code.apply();
             
             //log_msg( "iat: {}, len: {} => ({}, {}) => {}", {
