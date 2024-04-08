@@ -208,8 +208,11 @@ control MyIngress(inout headers hdr,
         READ_REG( last_ts_reg, last );
         //moment the packet arrived at the ingress port
         // bmv2 uses 48 bit to store ingress_global_timestamp
-        now = (timestamp_t) standard_metadata.ingress_global_timestamp * 1000; 
-        meta.iat = ( now - last );
+        now = (timestamp_t) standard_metadata.ingress_global_timestamp * 1000;
+        //ignore the first packet as there is no IAT 
+        if( last != 0 ){
+            meta.iat = ( now - last );
+        }
         //meta.iat = 93500;
         WRITE_REG( last_ts_reg, now );
     }
