@@ -35,7 +35,7 @@ FEATURE_NAMES = ["iat", "len"]
 
 
 priority=0
-def write_entrie(f, domain, classification):
+def write_entry(f, domain, classification):
     global priority
     priority += 1
     clause = []
@@ -126,7 +126,7 @@ def visite(dt, node_id, features, file, path = [] ):
         classification = classes[ class_index ]
 
         # wirte the node information into text file
-        write_entries(f, clause, classification)
+        write_entry(f, clause, classification)
         return
     else:
         # need to clone the path to avoid being add nodes in the left branch
