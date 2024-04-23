@@ -150,7 +150,7 @@ def main(p4info_file_path, bmv2_file_path, runtime_cli_path):
         
         # read classification results from the switch
         with open("logs/predict.csv","w") as predict_file:
-            predict_file.write("iat,len,class\n") #header
+            predict_file.write("iat,len,diffLen,class\n") #header
             while True:
                 for (srcIP, dstIP, srcPort, dstPort, proto, iat, ipLen, diffLen, result) in readDigests(p4info_helper, s1, DIGEST_NAME):
                     print(srcIP, dstIP, srcPort, dstPort, proto, "=>" , iat, ipLen, diffLen, "=>", CLASS_LABLES[result])
