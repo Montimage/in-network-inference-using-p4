@@ -5,7 +5,7 @@ This repository implements a machine-learning-based approach to classify encrypt
 
 - `iat` (Inter-Arrival Time): different arrival time of the current packet and the one of the previous packet
 - `len`: total length of the current IP packet
-- `diffLen`: different of `len`
+- `diffLen`: different of `len` (that represents the difference of lengths of 2 consecutive IP packets)
 
 The source code consists mainly 2 parts:
 
@@ -85,4 +85,4 @@ When comparing this output with the [extracted features](./src/offline/pcaps/sky
 
 
 
-When replacing `iat` by `diffLen` feature (that represents the difference of lengths of 2 consecutive IP packets), then the BMv2 switch can infer *correctly* when replaying `skype.v2.pcap`. See result [here](https://github.com/Montimage/inline-traffic-classification-using-p4/tree/replace-iat-by-diffLen?tab=readme-ov-file#inference).
+When using only `len` and `diffLen` features, then the BMv2 switch can infer *correctly* when replaying `skype.v2.pcap`. See result [here](https://github.com/Montimage/inline-traffic-classification-using-p4/tree/replace-iat-by-diffLen?tab=readme-ov-file#inference).
