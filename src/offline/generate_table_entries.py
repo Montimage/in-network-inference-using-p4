@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 
-# Expand a DecisionTreeClassifier to a text file which is structured as following:
-# - for each feature:
-#    + feature-i: list of thresholds 
-#    + ...
-# - for each path from root to leaf:
-#    + IF condition-1 and condition-2 and ... THEN classification-1
+# Expand a DecisionTreeClassifier to a text file which contains entries to configure `MyIngress.ml_code` table.
+#  The structure of an entry is described here: https://github.com/p4lang/behavioral-model/blob/main/docs/runtime_CLI.md#table_add
 #
-#
-# See an example in pcaps/tree_min.txt
+# See an example in pcaps/s1-commands.txt
 
 import numpy as np
 import pandas as pd
@@ -31,7 +26,7 @@ inputfile  = args.i
 outputfile = args.o
 
 
-FEATURE_NAMES = ["iat", "len"]
+FEATURE_NAMES = ["iat", "len", "diffLen"]
 
 
 priority=0
@@ -74,17 +69,17 @@ def minimize( path ):
         "len" : {
             "min": 0, 
             "max": 0xFFFF #max size of an IP packet
+        },
+        "diffLen" : {
+            "min": 0, 
+            "max": 2*0xFFFF #2 times of packet size
         }
     }
 
-    domain = {}
+    domain = DOMAIN
     for (feature, sign, threshold) in path:
         if feature not in DOMAIN:
             raise Exception("need to set in DOMAIN min and max of", feature)
-            
-        # init
-        if feature not in domain:
-            domain[feature] = DOMAIN[feature].copy()
 
         val = domain[ feature ]
         

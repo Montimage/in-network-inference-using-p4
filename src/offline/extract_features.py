@@ -6,6 +6,7 @@
 # Features:
 #  - IAT
 #  - IP payload length
+#  - difference of IP payload length
 #
 
 from scapy.all import *
@@ -14,6 +15,7 @@ import argparse, csv, os
 def extract_features_from_pcap( inputfile, outputfile, classification ):
     results = []
     last_ts = 0
+    last_len = 0
 
     #read the pcap file and extract the features for each packet
     all_packets = rdpcap(inputfile)
@@ -29,6 +31,7 @@ def extract_features_from_pcap( inputfile, outputfile, classification ):
             # for the first time
             if last_ts == 0:
                 last_ts = ts
+                last_len = ip_len
                 continue
 
             # get IAT - Inter Arrival Time
@@ -37,9 +40,14 @@ def extract_features_from_pcap( inputfile, outputfile, classification ):
                 print("Ignore unordered packet ", packet )
                 continue
 
+            diff_len = ip_len - last_len
+            diff_len += 0xFFFF #avoid negative value
+
+            last_len = ip_len
+
             last_ts = ts
 
-            metric = {"iat" : iat, "len": ip_len, "class": classification}
+            metric = {"iat" : iat, "len": ip_len, "diffLen": diff_len, "class": classification}
             results.append( metric )
         except AttributeError:
             print("Error while parsing packet", packet)

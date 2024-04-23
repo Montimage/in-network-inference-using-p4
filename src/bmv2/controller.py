@@ -116,9 +116,10 @@ def readDigests(p4info_helper, sw, digest_name):
                 # feature values
                 iat     = bytes_to_int( st[5].bitstring )
                 ipLen   = bytes_to_int( st[6].bitstring )
-                result  = bytes_to_int( st[7].bitstring )
+                diffLen = bytes_to_int( st[7].bitstring )
+                result  = bytes_to_int( st[8].bitstring )
                 # expose the result
-                yield( srcIP, dstIP, srcPort, dstPort, proto, iat, ipLen, result )
+                yield( srcIP, dstIP, srcPort, dstPort, proto, iat, ipLen, diffLen, result )
 
 
 def main(p4info_file_path, bmv2_file_path, runtime_cli_path):
@@ -151,9 +152,9 @@ def main(p4info_file_path, bmv2_file_path, runtime_cli_path):
         with open("logs/predict.csv","w") as predict_file:
             predict_file.write("iat,len,class\n") #header
             while True:
-                for (srcIP, dstIP, srcPort, dstPort, proto, iat, ipLen, result) in readDigests(p4info_helper, s1, DIGEST_NAME):
-                    print(srcIP, dstIP, srcPort, dstPort, proto, "=>" , iat, ipLen, "=>", CLASS_LABLES[result])
-                    predict_file.write("{},{},{}\n".format(iat, ipLen, result))
+                for (srcIP, dstIP, srcPort, dstPort, proto, iat, ipLen, diffLen, result) in readDigests(p4info_helper, s1, DIGEST_NAME):
+                    print(srcIP, dstIP, srcPort, dstPort, proto, "=>" , iat, ipLen, diffLen, "=>", CLASS_LABLES[result])
+                    predict_file.write("{},{},{},{}\n".format(iat, ipLen, diffLen, result))
             #sleep(0.01)
 
     except KeyboardInterrupt:

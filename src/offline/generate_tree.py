@@ -70,7 +70,7 @@ def visite(dt, node_id, features, file, path = [] ):
 
 
 
-FEATURE_NAMES = ["iat", "len"]
+FEATURE_NAMES = ["iat", "len", "diffLen"]
 
 
 # structure of model: DecisionTreeClassifier

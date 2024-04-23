@@ -41,6 +41,10 @@ def minimize( path ):
         "len" : {
             "min": 0, 
             "max": 0xFFFF #max size of an IP packet
+        },
+        "diffLen" : {
+            "min": 0, 
+            "max": 2*0xFFFF #2 times of packet size
         }
     }
 
@@ -125,7 +129,7 @@ def visite(dt, node_id, features, file, path = [] ):
 
 
 
-FEATURE_NAMES = ["iat", "len"]
+FEATURE_NAMES = ["iat", "len", "diffLen"]
 
 # structure of model: DecisionTreeClassifier
 # https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html#sphx-glr-auto-examples-tree-plot-unveil-tree-structure-py

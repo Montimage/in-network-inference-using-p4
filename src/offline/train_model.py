@@ -46,7 +46,7 @@ dt.fit(X, Y)
 
 # visualize the tree
 plt.figure( dpi=100 )
-tree.plot_tree( dt, filled=True, feature_names=["iat", "len"])
+tree.plot_tree( dt, filled=True, feature_names=["iat", "len", "diffLen"])
 plt.savefig("./pcaps/dt.pdf", format='pdf', bbox_inches='tight')
 
 #Predict_Y = dt.predict(X)
