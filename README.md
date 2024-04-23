@@ -11,7 +11,7 @@ The source code consists mainly 2 parts:
 
 - [offline](./src/offline) contains tools to extract features from pcap files, train model, evaluate model and generate P4 match-action tables' entries
 - [bmv2](./src/bmv2) contains P4 code to run BMv2 switch which performs the infererence of the DT model against network traffic
-
+- [p4pi](./src/p4pi) contains P4 code to run inside a Raspberry Pi which installs [P4PI](https://github.com/p4lang/p4pi) and its controller
 
 
 # Execution
