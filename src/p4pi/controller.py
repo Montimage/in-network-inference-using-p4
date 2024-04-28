@@ -64,7 +64,10 @@ def main(runtime_cli_path, thrift_address, p4_runtime_address, block_class):
         # Send master arbitration update message to establish this controller as
         # master (required by P4Runtime before performing any other write operation)
         s1.MasterArbitrationUpdate()
-
+        # Write the rules that performs packet routing
+        print("=> load match-action table for routing packets")
+        load_switch_cli( s1, "./switch-forward.txt", thrift_address )
+        
         # Write the rules that performs inference
         print("=> load match-action table for ML inference")
         load_switch_cli( s1, runtime_cli_path, thrift_address )
