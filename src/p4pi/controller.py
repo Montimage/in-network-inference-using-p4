@@ -18,9 +18,6 @@ import grpc
 import time
 import tempfile
 
-inputfile = './tree.txt'
-actionfile = './action.txt'
-
 # Import P4Runtime lib from parent utils dir
 # Probably there's a better way of doing this.
 sys.path.append(
@@ -95,9 +92,9 @@ def main(runtime_cli_path, thrift_address, p4_runtime_address, block_class):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='P4Runtime Controller')
 
-    parser.add_argument('--runtime-cli', help='The ML control plane file',
+    parser.add_argument('--runtime-cli', help='The ML model',
                         type=str, action="store", required=False,
-                        default='../offline/pcaps/s1-commands.txt')
+                        default='./s1-commands.txt')
 
     parser.add_argument('--thrift-address', help='Thrift address (in format IP:port) for table updates',
                         type=str, action="store", required=False,
