@@ -166,3 +166,4 @@ cython_debug/
 *.log
 src/bmv2/logs
 src/bmv2/pcaps
+*.p4i
