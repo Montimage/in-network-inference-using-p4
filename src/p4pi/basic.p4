@@ -217,7 +217,7 @@ control MyIngress(inout headers hdr,
             NoAction;
             set_result;
         }
-        size = 1024;
+        size = NB_ENTRIES;
     }
 
     //timestamp of the previous packet
