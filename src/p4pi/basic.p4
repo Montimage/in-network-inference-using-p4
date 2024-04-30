@@ -12,7 +12,7 @@ const bit<16> TYPE_IPV4 = 0x800;
 const bit<8>  TYPE_TCP  = 6;
 const bit<8>  TYPE_UDP  = 17;
 
-const bit<32> NB_ENTRIES = 2048;
+const bit<32> NB_ENTRIES = 8192;
 
 //write and read the first element of a register (which contains an array of elements)
 #define FIST_INDEX ((bit<32>)0)
