@@ -2,7 +2,6 @@
 
 /*
 This P4 code is an extension of ../bmv2/basic.p4. It is deployed into a Raspberry Pi
-- add a reaction to drop malicious traffic
 */
 
 #include <core.p4>
@@ -12,13 +11,6 @@ const bit<16> TYPE_IPV4 = 0x800;
 const bit<8>  TYPE_TCP  = 6;
 const bit<8>  TYPE_UDP  = 17;
 
-const bit<32> NB_ENTRIES = 2048;
-
-//write and read the first element of a register (which contains an array of elements)
-#define FIST_INDEX ((bit<32>)0)
-#define WRITE_REG(r, v) r.write(FIST_INDEX, v)
-#define READ_REG(r,  v) r.read(v, FIST_INDEX)
-
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
 *************************************************************************/
@@ -26,10 +18,6 @@ const bit<32> NB_ENTRIES = 2048;
 typedef bit<9>  egressSpec_t;
 typedef bit<48> macAddr_t;
 typedef bit<32> ip4Addr_t;
-typedef bit<64> feature1_t; // IAT
-typedef bit<16> feature2_t; //packet length
-typedef bit<32> feature3_t; //diff of packet length
-typedef bit<8>  inference_result_t; //final classification
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -93,18 +81,6 @@ struct headers {
     udp_t        udp;
 }
 
-struct digest_t {
-    //flow ID is a 5-tuples
-    ip4Addr_t srcAddr;  //32 bits
-    ip4Addr_t dstAddr;
-    bit<16> srcPort;
-    bit<16> destPort;
-    bit<8> protocol;
-    feature1_t iat;
-    feature2_t len;
-    feature3_t diffLen;
-    inference_result_t class_value; //class of traffic in this flow
-}
 
 /*************************************************************************
 *********************** P A R S E R  ***********************************
@@ -192,93 +168,9 @@ control MyIngress(inout headers hdr,
         default_action = drop();
     }
 
-    table reaction {
-        key = {
-            meta.ml_result: exact; //packet will be dropped or not depending on ml_result
-        }
-        actions = {
-            NoAction;
-            drop;
-        }
-        size = 1024;
-    }
-    
-    /* ml table and its actions for the final result */
-    action set_result(inference_result_t val){
-        meta.ml_result = val;
-    }
-    table ml_code{
-        key = {
-            meta.iat          : range ;
-            hdr.ipv4.totalLen : range ;
-            meta.diffLen      : range ;
-        }
-        actions = {
-            NoAction;
-            set_result;
-        }
-        size = 1024;
-    }
 
-    //timestamp of the previous packet
-    // we need only 1 element for now (without considering IAT of packets belong to a flow)
-    register<feature1_t>(1) last_ts_reg;
-    action get_iat(){
-        feature1_t last;
-        feature1_t now;
-        READ_REG( last_ts_reg, last );
-        //moment the packet arrived at the ingress port
-        // bmv2 uses 48 bit to store ingress_global_timestamp
-        now = (feature1_t) standard_metadata.ingress_global_timestamp * 1000;
-        //ignore the first packet as there is no IAT 
-        if( last != 0 ){
-            meta.iat = ( now - last );
-        }
-        //meta.iat = 93500;
-        WRITE_REG( last_ts_reg, now );
-    }
-    register<feature3_t>(1) last_len_reg;
-    action get_diff_len(){
-        feature3_t last;
-        feature3_t now;
-        READ_REG( last_len_reg, last );
-        
-        now = (feature3_t) hdr.ipv4.totalLen;
-        //ignore the first packet as there is no IAT 
-        if( last != 0 ){
-            meta.diffLen = ( now + 0xFFFF - last );
-        }
-        //meta.feature1 = 93500;
-        WRITE_REG( last_len_reg, now );
-    }
-    
     apply {
         if (hdr.ipv4.isValid() ) {
-            //2 steps of inference:
-            //  0. extract feature values
-            get_iat();
-            get_diff_len();
-            
-            //  1. match the final result
-            ml_code.apply();
-            
-            reaction.apply();
-            //log_msg( "iat: {}, len: {} => ({}, {}) => {}", {
-            //    meta.iat, hdr.ipv4.totalLen,
-            //    meta.ml_code_iat, meta.ml_code_len,
-            //    meta.ml_result
-            //});
-            
-            //if( meta.ml_result != 0 )
-            //{
-            //    // send a digest to controller
-            //    digest<digest_t>(1, {hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, 
-            //                     meta.srcPort, meta.dstPort,
-            //                     hdr.ipv4.protocol, 
-            //                     (bit<64>)meta.iat, hdr.ipv4.totalLen,
-            //                     meta.diffLen,
-            //                     meta.ml_result});
-            //}
             ipv4_lpm.apply();
         }
     }
