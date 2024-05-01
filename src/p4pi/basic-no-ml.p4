@@ -67,11 +67,6 @@ struct metadata {
     //remember this info to avoid accessing from udp or tcp
     bit<16> srcPort;
     bit<16> dstPort;
-    //ml features
-    feature1_t iat;  //no need to store feature2 as it is in headers
-    feature3_t diffLen;
-
-    inference_result_t ml_result;    //final classification result
 }
 
 struct headers {
