@@ -1,7 +1,7 @@
 # inline-traffic-classification-using-p4
 A ML-based inline traffic classification using P4
 
-This repository implements a machine-learning-based approach to classify encrypted network traffic using P4. The testbed is evaluated on a P4 virtual device, [BMv2 Simple Switch](https://github.com/p4lang/behavioral-model/blob/main/docs/simple_switch.md). The model is [Decision Tree Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html) using 2 features which are independent of packets' payload (that is encrypted) :
+This repository implements a machine-learning-based approach to classify encrypted network traffic using P4. The testbed is evaluated on a P4 virtual device, [BMv2 Simple Switch](https://github.com/p4lang/behavioral-model/blob/main/docs/simple_switch.md). The model is [Decision Tree Classifier](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html) using 3 features which are independent of packets' payload (that is encrypted) :
 
 - `iat` (Inter-Arrival Time): different arrival time of the current packet and the one of the previous packet
 - `len`: total length of the current IP packet
@@ -13,6 +13,7 @@ The source code consists mainly 2 parts:
 - [bmv2](./src/bmv2) contains P4 code to run BMv2 switch which performs the infererence of the DT model against network traffic
 - [p4pi](./src/p4pi) contains P4 code to run inside a Raspberry Pi which installs [P4PI](https://github.com/p4lang/p4pi) and its controller
 
+<img src="img/archi.png" width="600px" />
 
 # Execution
 
